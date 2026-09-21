@@ -1,0 +1,32 @@
+[vep]
+info_field = "CSQ"
+output_column = "vep_annotations"
+required = true
+# Omit include_fields to use a compact set of common VEP fields that are
+# present in the input header. Set it explicitly when a fixed JSON schema is
+# required, for example:
+# include_fields = ["Allele", "Consequence", "IMPACT", "SYMBOL", "HGVSc", "HGVSp"]
+
+# Additional columns can come from a VEP CSQ subfield or a top-level INFO
+# field. Set required=false for fields that are optional across VCFs.
+[[columns]]
+name = "gnomad_exomes_af"
+source = "vep"
+field = "gnomADe_AF"
+aggregate = "max"
+required = false
+
+[[columns]]
+name = "gnomad_genomes_af"
+source = "vep"
+field = "gnomADg_AF"
+aggregate = "max"
+required = false
+
+[[columns]]
+name = "clinvar_significance"
+source = "info"
+field = "CLNSIG"
+aggregate = "join"
+separator = ";"
+required = false

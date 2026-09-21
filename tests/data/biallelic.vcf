@@ -1,0 +1,12 @@
+##fileformat=VCFv4.2
+##contig=<ID=1,length=1000000>
+##FILTER=<ID=PASS,Description="All filters passed">
+##INFO=<ID=TEST_AF,Number=A,Type=Float,Description="Allele-specific test frequency">
+##INFO=<ID=ALLELE_LABEL,Number=R,Type=String,Description="Reference and alternate labels">
+##INFO=<ID=TAGS,Number=.,Type=String,Description="Tags">
+##INFO=<ID=CLNSIG,Number=.,Type=String,Description="Clinical significance">
+##INFO=<ID=CSQ,Number=.,Type=String,Description="Consequence annotations from Ensembl VEP. Format: Allele|Consequence|IMPACT|SYMBOL|Gene|Feature|HGVSc|HGVSp|gnomADe_AF|gnomADg_AF|ALLELE_NUM">
+##FORMAT=<ID=GT,Number=1,Type=String,Description="Genotype">
+#CHROM	POS	ID	REF	ALT	QUAL	FILTER	INFO	FORMAT	S1	S2	S3	S4
+1	100	rsOne	A	G	99	PASS	TEST_AF=0.001;ALLELE_LABEL=reference,alternate;TAGS=a,a,b;CLNSIG=Pathogenic;CSQ=G|missense_variant|MODERATE|ATM|ENSG1|ENST1|ENST1:c.1A>G|ENSP1:p.Lys1Arg|0.0001|0.0002|1	GT	0/1	1/1	0/0	./.
+1	200	rsTwo	C	T	50	.	TEST_AF=0.01;ALLELE_LABEL=reference-2,alternate-2;TAGS=x,y;CSQ=T|synonymous_variant|LOW|CHEK2|ENSG2|ENST2|ENST2:c.2C>T|ENSP2:p.Gly1=|0.01|0.02|1	GT	0/1	1/1	0/1	./1
