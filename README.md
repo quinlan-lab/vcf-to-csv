@@ -1,3 +1,5 @@
+[![Test](https://github.com/quinlan-lab/vcf-to-csv/actions/workflows/test.yml/badge.svg)](https://github.com/quinlan-lab/vcf-to-csv/actions/workflows/test.yml)
+
 # Annotated VCF to CSV
 
 This utility reads an annotated biallelic VCF or BCF with `cyvcf2` and writes
