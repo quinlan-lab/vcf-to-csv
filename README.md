@@ -59,13 +59,21 @@ Selected columns from the two output rows are:
 | 20 | 10000117 | rs4816203 | 0.605431 | HG00096,HG00097,NA12878 | |
 | 20 | 10000598 | rs6057087 | 0.810503 | HG00096,HG00097,HG00099 | NA12878 |
 
-The optional samples-of-interest file contains one VCF sample ID per line and
-may be empty. Blank lines and lines beginning with `#` are ignored. Unknown and
-duplicate sample IDs are errors. The output columns `interest_het_count`,
-`interest_homalt_count`, `other_het_count`, and `other_homalt_count` compare
-carriers in that list with carriers among all remaining VCF samples. Without a
-list, the interest counts are zero and the `other_*` counts include all
-carriers.
+### Samples of interest
+
+The optional `--samples-of-interest` file is plain text with one VCF sample ID
+per line and no header. For example:
+
+```text
+# Case samples
+HG00096
+NA12878
+```
+
+IDs must exactly match the VCF `#CHROM` header. Blank lines and `#` comments are
+ignored; unknown, duplicate, or whitespace-containing IDs are errors. The
+`interest_*` columns count carriers in this file, while `other_*` columns count
+all remaining carriers. Without the option, all carriers are counted as other.
 
 ## Configure annotations
 
