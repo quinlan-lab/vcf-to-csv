@@ -1,9 +1,16 @@
 [vep]
 info_field = "CSQ"
-required = false
-# If this VCF had been annotated by VEP, change required to true and optionally
-# select the fields stored in the vep_annotations JSON output column:
-# include_fields = ["Allele", "Consequence", "IMPACT", "SYMBOL"]
+required = true
+include_fields = [
+  "Allele",
+  "Consequence",
+  "IMPACT",
+  "SYMBOL",
+  "Gene",
+  "Feature",
+  "BIOTYPE",
+  "HGVSc",
+]
 
 [[columns]]
 name = "global_af"
@@ -29,14 +36,16 @@ source = "info"
 field = "VT"
 aggregate = "join"
 
-# A VEP subfield can also become its own CSV column. If CSQ were present,
-# uncommenting this entry would add a semicolon-separated list such as
-# "missense_variant;splice_region_variant" to the consequence column.
-#
-# [[columns]]
-# name = "consequence"
-# source = "vep"
-# field = "Consequence"
-# aggregate = "join"
-# separator = ";"
-# required = true
+[[columns]]
+name = "genes"
+source = "vep"
+field = "SYMBOL"
+aggregate = "join"
+separator = ";"
+
+[[columns]]
+name = "consequence"
+source = "vep"
+field = "Consequence"
+aggregate = "join"
+separator = ";"

@@ -93,19 +93,7 @@ def test_export_biallelic_with_interest_counts(tmp_path: Path) -> None:
 
 def test_export_public_1000_genomes_multisample_subset(tmp_path: Path) -> None:
     output = tmp_path / "1000genomes.csv"
-    config = config_from_mapping(
-        {
-            "vep": {"required": False},
-            "columns": [
-                {
-                    "name": "global_af",
-                    "source": "info",
-                    "field": "AF",
-                    "aggregate": "first",
-                }
-            ],
-        }
-    )
+    config = load_config(ROOT / "tests" / "data" / "1000genomes.toml")
 
     stats = export_vcf(
         ROOT / "tests" / "data" / "1000genomes-phase3-subset.vcf",
@@ -128,6 +116,13 @@ def test_export_public_1000_genomes_multisample_subset(tmp_path: Path) -> None:
     assert rows[0]["homalt_samples"] == ""
     assert rows[0]["interest_het_count"] == "2"
     assert rows[0]["other_het_count"] == "1"
+    assert rows[0]["genes"] == "ANKEF1;SNAP25-AS1"
+    assert rows[0]["consequence"] == (
+        "intron_variant&non_coding_transcript_variant;downstream_gene_variant"
+    )
+    annotations = json.loads(rows[0]["vep_annotations"])
+    assert annotations[0]["SYMBOL"] == "ANKEF1"
+    assert annotations[0]["Gene"] == "ENSG00000132623"
 
     assert rows[1]["rsid"] == "rs6057087"
     assert rows[1]["global_af"] == "0.810503"
@@ -156,6 +151,23 @@ def test_rejects_unknown_sample_of_interest(tmp_path: Path) -> None:
             load_config(ROOT / "config.example.toml"),
             samples_of_interest=("UNKNOWN",),
         )
+
+
+def test_gene_filter_matches_vep_gene_id(tmp_path: Path) -> None:
+    output = tmp_path / "variants.csv"
+
+    stats = export_vcf(
+        ROOT / "tests" / "data" / "biallelic.vcf",
+        output,
+        load_config(ROOT / "config.example.toml"),
+        genes=("ENSG2",),
+    )
+
+    assert stats.variants_read == 2
+    assert stats.rows_written == 1
+    with output.open(newline="", encoding="utf-8") as handle:
+        rows = list(csv.DictReader(handle))
+    assert [row["rsid"] for row in rows] == ["rsTwo"]
 
 
 def test_exports_site_only_vcf(tmp_path: Path) -> None:

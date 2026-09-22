@@ -50,3 +50,25 @@ def test_cli_accepts_empty_samples_of_interest_file(tmp_path: Path) -> None:
         rows = list(csv.DictReader(handle))
     assert rows[1]["interest_het_count"] == "0"
     assert rows[1]["other_het_count"] == "2"
+
+
+def test_cli_filters_variants_by_gene_list(tmp_path: Path) -> None:
+    gene_file = tmp_path / "genes.txt"
+    gene_file.write_text("# genes of interest\nATM\n", encoding="utf-8")
+    output = tmp_path / "variants.csv"
+
+    result = main(
+        [
+            str(ROOT / "tests" / "data" / "biallelic.vcf"),
+            str(output),
+            "--config",
+            str(ROOT / "config.example.toml"),
+            "--genes",
+            str(gene_file),
+        ]
+    )
+
+    assert result == 0
+    with output.open(newline="", encoding="utf-8") as handle:
+        rows = list(csv.DictReader(handle))
+    assert [row["rsid"] for row in rows] == ["rsOne"]

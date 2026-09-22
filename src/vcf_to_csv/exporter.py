@@ -246,6 +246,7 @@ def export_vcf(
     output_path: Path | str,
     config: ExportConfig,
     samples_of_interest: Iterable[str] | None = None,
+    genes: Iterable[str] | None = None,
 ) -> ExportStats:
     """Export an annotated biallelic VCF to CSV."""
 
@@ -269,6 +270,19 @@ def export_vcf(
                 + ", ".join(unknown_samples)
             )
         vep_parser = _build_vep_parser(vcf, config)
+        gene_filter = None if genes is None else frozenset(genes)
+        gene_fields: tuple[str, ...] = ()
+        if gene_filter is not None:
+            if vep_parser is None:
+                raise ValueError("Gene filtering requires a VEP CSQ INFO field")
+            gene_fields = tuple(
+                field for field in ("SYMBOL", "Gene") if field in vep_parser.fields
+            )
+            if not gene_fields:
+                raise ValueError(
+                    "Gene filtering requires a SYMBOL or Gene subfield in the "
+                    "VEP CSQ header"
+                )
         info_headers = _validate_custom_columns(vcf, config, vep_parser)
         fieldnames = (
             *CORE_COLUMNS,
@@ -307,6 +321,12 @@ def export_vcf(
                     else None
                 )
                 vep_records = vep_parser.parse(raw_vep) if vep_parser else []
+                if gene_filter is not None and not any(
+                    record.get(field, "") in gene_filter
+                    for record in vep_records
+                    for field in gene_fields
+                ):
+                    continue
                 try:
                     genotypes = variant.genotypes or ()
                 except Exception as error:

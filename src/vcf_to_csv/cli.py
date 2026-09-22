@@ -41,6 +41,16 @@ def build_parser() -> argparse.ArgumentParser:
         metavar="FILE",
         help="Possibly empty text file with one sample ID of interest per line",
     )
+    parser.add_argument(
+        "--genes",
+        "--gene-list",
+        type=Path,
+        metavar="FILE",
+        help=(
+            "Text file with one gene symbol or gene ID per line; only variants "
+            "with a matching CSQ annotation are emitted"
+        ),
+    )
     parser.add_argument("--version", action="version", version=__version__)
     return parser
 
@@ -70,11 +80,15 @@ def main(argv: Sequence[str] | None = None) -> int:
         samples_of_interest = None
         if args.samples_of_interest is not None:
             samples_of_interest = _load_samples_of_interest(args.samples_of_interest)
+        genes = None
+        if args.genes is not None:
+            genes = _load_genes(args.genes)
         stats = export_vcf(
             args.input_vcf,
             args.output_csv,
             config,
             samples_of_interest=samples_of_interest,
+            genes=genes,
         )
     except (OSError, ValueError) as error:
         print(f"error: {error}", file=sys.stderr)
@@ -99,23 +113,31 @@ def main(argv: Sequence[str] | None = None) -> int:
 
 
 def _load_samples_of_interest(path: Path) -> frozenset[str]:
-    samples: set[str] = set()
+    return _load_identifier_file(path, "sample ID")
+
+
+def _load_genes(path: Path) -> frozenset[str]:
+    return _load_identifier_file(path, "gene")
+
+
+def _load_identifier_file(path: Path, item_name: str) -> frozenset[str]:
+    identifiers: set[str] = set()
     with path.open(encoding="utf-8") as handle:
         for line_number, raw_line in enumerate(handle, start=1):
-            sample = raw_line.strip()
-            if not sample or sample.startswith("#"):
+            identifier = raw_line.strip()
+            if not identifier or identifier.startswith("#"):
                 continue
-            if any(character.isspace() for character in sample):
+            if any(character.isspace() for character in identifier):
                 raise ValueError(
-                    f"Invalid sample ID at {path}:{line_number}; "
+                    f"Invalid {item_name} at {path}:{line_number}; "
                     "expected one ID per line"
                 )
-            if sample in samples:
+            if identifier in identifiers:
                 raise ValueError(
-                    f"Duplicate sample ID {sample!r} at {path}:{line_number}"
+                    f"Duplicate {item_name} {identifier!r} at {path}:{line_number}"
                 )
-            samples.add(sample)
-    return frozenset(samples)
+            identifiers.add(identifier)
+    return frozenset(identifiers)
 
 
 if __name__ == "__main__":  # pragma: no cover

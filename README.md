@@ -34,7 +34,8 @@ python3 -m venv .venv
   input.annotated.vcf.gz \
   variants.csv \
   --config config.example.toml \
-  --samples-of-interest samples.txt
+  --samples-of-interest samples.txt \
+  --genes genes.txt
 ```
 
 `python -m vcf_to_csv` is also available after installation.
@@ -51,15 +52,16 @@ Genomes Phase 3 callset. Run it directly and write the CSV to standard output:
 .venv/bin/vcf-to-csv \
   tests/data/1000genomes-phase3-subset.vcf \
   - \
-  --config tests/data/1000genomes.toml
+  --config tests/data/1000genomes.toml \
+  --genes tests/data/genes.txt
 ```
 
 Selected columns from the two output rows are:
 
-| chrom | pos | rsid | global_af | het_samples | homalt_samples |
-| --- | ---: | --- | ---: | --- | --- |
-| 20 | 10000117 | rs4816203 | 0.605431 | HG00096,HG00097,NA12878 | |
-| 20 | 10000598 | rs6057087 | 0.810503 | HG00096,HG00097,HG00099 | NA12878 |
+| chrom | pos | rsid | global_af | genes | consequence | het_samples | homalt_samples |
+| --- | ---: | --- | ---: | --- | --- | --- | --- |
+| 20 | 10000117 | rs4816203 | 0.605431 | ANKEF1;SNAP25-AS1 | intron_variant&non_coding_transcript_variant;downstream_gene_variant | HG00096,HG00097,NA12878 | |
+| 20 | 10000598 | rs6057087 | 0.810503 | ANKEF1;SNAP25-AS1 | intron_variant&non_coding_transcript_variant;downstream_gene_variant | HG00096,HG00097,HG00099 | NA12878 |
 
 ### Samples of interest
 
@@ -76,6 +78,15 @@ IDs must exactly match the VCF `#CHROM` header. Blank lines and `#` comments are
 ignored; unknown, duplicate, or whitespace-containing IDs are errors. The
 `interest_*` columns count carriers in this file, while `other_*` columns count
 all remaining carriers. Without the option, all carriers are counted as other.
+
+### Gene filtering
+
+Use `--genes FILE` (or `--gene-list FILE`) to emit only variants having at
+least one matching VEP `CSQ` annotation. The file contains one gene per line,
+with the same blank-line and `#` comment handling as the samples-of-interest
+file. Values are matched exactly and case-sensitively against both the VEP
+`SYMBOL` and `Gene` subfields, so either gene symbols or Ensembl gene IDs can
+be used. An empty gene file emits only the CSV header.
 
 ## Configure annotations
 
