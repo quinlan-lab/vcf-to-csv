@@ -226,8 +226,7 @@ def _display_value(value: object | None) -> object:
 def _format_call_rate(called: int, total: int) -> str:
     if not total:
         return MISSING_VALUE
-    value = format(called / total, ".3f")
-    return value.rstrip("0").rstrip(".") if "." in value else value
+    return format(called / total, ".3f").rstrip("0").rstrip(".")
 
 
 def _open_output(path: Path | str) -> tuple[TextIO, bool]:
@@ -262,6 +261,7 @@ def export_vcf(
     vcf = VCF(str(input_path), gts012=True, strict_gt=True)
     try:
         sample_names = tuple(vcf.samples)
+        n_samples = len(sample_names)
         interest_samples = frozenset(samples_of_interest or ())
         unknown_samples = sorted(interest_samples - set(sample_names))
         if unknown_samples:
@@ -333,7 +333,6 @@ def export_vcf(
                     raise ValueError(
                         f"Could not read GT at {variant.CHROM}:{variant.POS}"
                     ) from error
-                n_samples = len(sample_names)
                 called, het_samples, homalt_samples = _called_and_carrier_samples(
                     sample_names, genotypes
                 )
