@@ -13,7 +13,7 @@ from typing import TextIO
 from cyvcf2 import VCF
 
 from .config import CORE_COLUMNS, ColumnConfig, ExportConfig
-from .vep import VepParser
+from .vep import VepParser, parse_info_format
 
 SAMPLE_SEPARATOR = ","
 MISSING_VALUE = ""
@@ -36,6 +36,8 @@ class HeaderField:
 
     number: str
     value_type: str
+    subfield_index: int | None = None
+    subfield_sep: str = "|"
 
 
 def _header_record(vcf: VCF, field_name: str) -> Mapping[str, str] | None:
@@ -82,9 +84,25 @@ def _validate_custom_columns(
                     "is absent from the VCF header"
                 )
             continue
-        info_headers[column.field] = HeaderField(
+        subfield_index = None
+        if column.subfield is not None:
+            fields = parse_info_format(
+                str(header.get("Description", "")), column.subfield_sep
+            )
+            if column.subfield not in fields:
+                if column.required:
+                    raise ValueError(
+                        f"Required INFO subfield {column.subfield!r} for column "
+                        f"{column.name!r} is absent from the {column.field!r} "
+                        "Format declaration"
+                    )
+            else:
+                subfield_index = fields.index(column.subfield)
+        info_headers[column.name] = HeaderField(
             number=str(header.get("Number", ".")),
             value_type=str(header.get("Type", "String")),
+            subfield_index=subfield_index,
+            subfield_sep=column.subfield_sep,
         )
     return info_headers
 
@@ -206,12 +224,21 @@ def _custom_column_value(
     if column.source == "vep":
         return _aggregate((record.get(column.field) for record in records), column)
 
-    header = info_headers.get(column.field)
+    header = info_headers.get(column.name)
     if header is None:
         return None
     raw_value = variant.INFO.get(column.field)
     selected = _info_value(raw_value, header)
-    return _aggregate([selected], column)
+    if column.subfield is None:
+        return _aggregate([selected], column)
+    if header.subfield_index is None:
+        return None
+    subfield_values = []
+    for value in _iter_atomic_values([selected]):
+        parts = str(value).split(header.subfield_sep)
+        if header.subfield_index < len(parts):
+            subfield_values.append(parts[header.subfield_index])
+    return _aggregate(subfield_values, column)
 
 
 def _display_value(value: object | None) -> object:

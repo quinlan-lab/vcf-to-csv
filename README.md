@@ -145,6 +145,26 @@ aggregate = "max"
 required = false
 ```
 
+Structured INFO fields with a `Format:` declaration can expose one named
+subfield as a column. For example, given
+`Format: ALLELE|ALL_AF|ALL_AC|ALL_AN`, this extracts only `ALL_AF`:
+
+```toml
+[[columns]]
+name = "gnomad_all_af"
+source = "info"
+field = "FV_GNOMAD"
+subfield = "ALL_AF"
+aggregate = "first"
+```
+
+Subfields are pipe-delimited by default. Set `subfield_sep` when a header uses
+a different delimiter:
+
+```toml
+subfield_sep = "~"
+```
+
 Set `required = true` when a missing header field should stop the export. This
 helps catch spelling mistakes and annotation-pipeline drift.
 

@@ -1,4 +1,4 @@
-from vcf_to_csv.vep import VepParser, parse_vep_format
+from vcf_to_csv.vep import VepParser, parse_info_format, parse_vep_format
 
 
 def test_parse_vep_format() -> None:
@@ -8,6 +8,11 @@ def test_parse_vep_format() -> None:
     )
     fields = parse_vep_format(description)
     assert fields == ("Allele", "Consequence", "ALLELE_NUM")
+
+
+def test_parse_info_format_with_custom_separator() -> None:
+    fields = parse_info_format("Annotations. Format: ALLELE~SCORE", "~")
+    assert fields == ("ALLELE", "SCORE")
 
 
 def test_parses_and_projects_records() -> None:

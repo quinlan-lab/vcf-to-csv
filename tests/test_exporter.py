@@ -198,6 +198,72 @@ def test_exports_site_only_vcf(tmp_path: Path) -> None:
     assert row["other_het_count"] == "0"
 
 
+def test_extracts_formatted_info_subfields(tmp_path: Path) -> None:
+    input_vcf = tmp_path / "formatted-info.vcf"
+    input_vcf.write_text(
+        "##fileformat=VCFv4.2\n"
+        "##contig=<ID=1>\n"
+        '##INFO=<ID=FV_GNOMAD,Number=.,Type=String,Description="Format: '
+        'ALLELE|ALL_AF|ALL_AC">\n'
+        '##INFO=<ID=CUSTOM,Number=1,Type=String,Description="Format: '
+        'ALLELE~LABEL">\n'
+        "#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\n"
+        "1\t1\t.\tA\tG\t.\tPASS\t"
+        "FV_GNOMAD=G|0.012|7;CUSTOM=G~selected\n",
+        encoding="utf-8",
+    )
+    output = tmp_path / "variants.csv"
+    config = config_from_mapping(
+        {
+            "vep": {"required": False},
+            "columns": [
+                {
+                    "name": "gnomad_all_af",
+                    "source": "info",
+                    "field": "FV_GNOMAD",
+                    "subfield": "ALL_AF",
+                },
+                {
+                    "name": "custom_label",
+                    "source": "info",
+                    "field": "CUSTOM",
+                    "subfield": "LABEL",
+                    "subfield_sep": "~",
+                },
+            ],
+        }
+    )
+
+    export_vcf(input_vcf, output, config)
+
+    with output.open(newline="", encoding="utf-8") as handle:
+        row = next(csv.DictReader(handle))
+    assert row["gnomad_all_af"] == "0.012"
+    assert row["custom_label"] == "selected"
+
+
+def test_rejects_unknown_required_info_subfield(tmp_path: Path) -> None:
+    config = config_from_mapping(
+        {
+            "columns": [
+                {
+                    "name": "missing",
+                    "source": "info",
+                    "field": "TAGS",
+                    "subfield": "MISSING",
+                }
+            ]
+        }
+    )
+
+    with pytest.raises(ValueError, match="does not contain a 'Format:'"):
+        export_vcf(
+            ROOT / "tests" / "data" / "biallelic.vcf",
+            tmp_path / "variants.csv",
+            config,
+        )
+
+
 def test_rejects_duplicate_columns_from_direct_config(tmp_path: Path) -> None:
     config = load_config(ROOT / "config.example.toml")
     config = replace(config, vep=replace(config.vep, output_column="chrom"))

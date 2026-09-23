@@ -59,6 +59,8 @@ class ColumnConfig:
     aggregate: str = "first"
     separator: str = ";"
     required: bool = True
+    subfield: str | None = None
+    subfield_sep: str = "|"
 
 
 @dataclass(frozen=True)
@@ -147,7 +149,16 @@ def config_from_mapping(data: Mapping[str, Any]) -> ExportConfig:
             raise ValueError(f"{context} must be a TOML table")
         _check_keys(
             raw_column,
-            {"name", "source", "field", "aggregate", "separator", "required"},
+            {
+                "name",
+                "source",
+                "field",
+                "aggregate",
+                "separator",
+                "required",
+                "subfield",
+                "subfield_sep",
+            },
             context,
         )
         name = _as_nonempty_string(raw_column.get("name"), f"{context}.name")
@@ -158,6 +169,15 @@ def config_from_mapping(data: Mapping[str, Any]) -> ExportConfig:
         aggregate = str(raw_column.get("aggregate", "first")).lower()
         separator = _as_nonempty_string(
             raw_column.get("separator", ";"), f"{context}.separator"
+        )
+        subfield_value = raw_column.get("subfield")
+        subfield = (
+            None
+            if subfield_value is None
+            else _as_nonempty_string(subfield_value, f"{context}.subfield")
+        )
+        subfield_sep = _as_nonempty_string(
+            raw_column.get("subfield_sep", "|"), f"{context}.subfield_sep"
         )
 
         if name in seen_names:
@@ -171,6 +191,10 @@ def config_from_mapping(data: Mapping[str, Any]) -> ExportConfig:
                 f"{context}.aggregate must be one of: "
                 f"{', '.join(sorted(VALID_AGGREGATES))}"
             )
+        if source != "info" and subfield is not None:
+            raise ValueError(f"{context}.subfield is only valid for source='info'")
+        if subfield is None and "subfield_sep" in raw_column:
+            raise ValueError(f"{context}.subfield_sep requires subfield")
 
         seen_names.add(name)
         columns.append(
@@ -183,6 +207,8 @@ def config_from_mapping(data: Mapping[str, Any]) -> ExportConfig:
                 required=_as_bool(
                     raw_column.get("required", True), f"{context}.required"
                 ),
+                subfield=subfield,
+                subfield_sep=subfield_sep,
             )
         )
 

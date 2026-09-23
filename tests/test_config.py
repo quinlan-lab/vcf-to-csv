@@ -40,6 +40,39 @@ def test_include_fields_requires_json_output_column() -> None:
         config_from_mapping({"vep": {"include_fields": ["SYMBOL"]}})
 
 
+def test_info_subfield_separator_defaults_to_pipe() -> None:
+    config = config_from_mapping(
+        {
+            "columns": [
+                {
+                    "name": "all_af",
+                    "source": "info",
+                    "field": "FV_GNOMAD",
+                    "subfield": "ALL_AF",
+                }
+            ]
+        }
+    )
+
+    assert config.columns[0].subfield_sep == "|"
+
+
+def test_rejects_subfield_on_vep_column() -> None:
+    with pytest.raises(ValueError, match="only valid for source='info'"):
+        config_from_mapping(
+            {
+                "columns": [
+                    {
+                        "name": "symbol",
+                        "source": "vep",
+                        "field": "SYMBOL",
+                        "subfield": "value",
+                    }
+                ]
+            }
+        )
+
+
 def test_rejects_removed_output_settings() -> None:
     with pytest.raises(ValueError, match="Unknown top-level"):
         config_from_mapping({"output": {"sample_separator": ";"}})

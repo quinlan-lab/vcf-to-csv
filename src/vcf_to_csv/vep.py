@@ -25,16 +25,26 @@ DEFAULT_VEP_FIELDS = (
 )
 
 
-def parse_vep_format(description: str) -> tuple[str, ...]:
-    """Extract ordered subfield names from a VEP INFO header description."""
+def parse_info_format(description: str, separator: str = "|") -> tuple[str, ...]:
+    """Extract ordered subfield names from an INFO header description."""
 
     match = re.search(r"\bFormat:\s*([^\"\r\n]+)", description, flags=re.IGNORECASE)
     if not match:
-        raise ValueError("VEP INFO header does not contain a 'Format:' declaration")
-    fields = tuple(part.strip() for part in match.group(1).strip().split("|"))
+        raise ValueError("INFO header does not contain a 'Format:' declaration")
+    fields = tuple(part.strip() for part in match.group(1).strip().split(separator))
     if not fields or any(not item for item in fields):
-        raise ValueError("VEP INFO header contains an invalid field list")
+        raise ValueError("INFO header contains an invalid field list")
     return fields
+
+
+def parse_vep_format(description: str) -> tuple[str, ...]:
+    """Extract ordered subfield names from a VEP INFO header description."""
+
+    try:
+        return parse_info_format(description)
+    except ValueError as error:
+        message = str(error).replace("INFO header", "VEP INFO header")
+        raise ValueError(message) from error
 
 
 @dataclass(frozen=True)
