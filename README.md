@@ -12,8 +12,8 @@ Each row includes:
 - strict call-rate counts (`call_rate`, `n_called`, `n_missing`)
 - allele-specific `het_samples` and `homalt_samples` lists and counts
 - HET and HOMALT counts within samples of interest and all remaining samples
-- a JSON `vep_annotations` cell containing selected transcript annotations
-- any additional VEP or top-level INFO fields defined in TOML
+- flat, delimiter-separated VEP columns defined in TOML
+- any additional top-level INFO fields defined in TOML
 
 Sample lists are comma-separated, missing values are empty, and VCF floating
 point values are written with seven significant digits.
@@ -25,6 +25,19 @@ Python 3.9 or newer is required.
 ```bash
 python3 -m venv .venv
 .venv/bin/pip install -e '.[dev]'
+```
+
+On a FIPS-enabled cluster, the prebuilt `cyvcf2` wheel may fail during import
+with `FATAL FIPS SELFTEST FAILURE` because it bundles OpenSSL through libcurl.
+Rebuild `cyvcf2` without remote-URL support:
+
+```bash
+CYVCF2_HTSLIB_CONFIGURE_OPTIONS=--disable-libcurl \
+uv pip install \
+  --python .venv/bin/python \
+  --reinstall \
+  --no-binary cyvcf2 \
+  'cyvcf2>=0.34,<1'
 ```
 
 ## Run
@@ -102,6 +115,25 @@ Supported aggregation modes are:
 - `join`: distinct values in input order
 - `max` or `min`: numeric aggregation, useful for population frequencies
 
+For CSV-friendly VEP output, define one column per useful subfield. Repeated
+values are removed while input order is preserved:
+
+```toml
+[[columns]]
+name = "genes"
+source = "vep"
+field = "SYMBOL"
+aggregate = "join"
+separator = ";"
+
+[[columns]]
+name = "consequences"
+source = "vep"
+field = "Consequence"
+aggregate = "join"
+separator = ";"
+```
+
 For example:
 
 ```toml
@@ -125,9 +157,15 @@ samples.
 Multiallelic records are rejected with an error. Split or normalize them into
 biallelic records before running this exporter.
 
-The `vep_annotations` column is JSON rather than a lossy display string. This
-preserves multiple transcripts for a future web interface while still keeping
-the current output to a single CSV column.
+The lossless transcript-level JSON is optional. To include it in addition to
+the flat columns, set `output_column` and optionally select its fields:
+
+```toml
+[vep]
+info_field = "CSQ"
+output_column = "vep_annotations"
+include_fields = ["SYMBOL", "Consequence", "Feature", "HGVSc", "HGVSp"]
+```
 
 ## Test
 

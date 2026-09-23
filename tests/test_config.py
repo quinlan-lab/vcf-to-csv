@@ -10,7 +10,13 @@ def test_load_example_config() -> None:
     config = load_config(path)
 
     assert config.vep.info_field == "CSQ"
+    assert config.vep.output_column is None
     assert [column.name for column in config.columns] == [
+        "genes",
+        "consequences",
+        "transcripts",
+        "hgvsc",
+        "hgvsp",
         "gnomad_exomes_af",
         "gnomad_genomes_af",
         "clinvar_significance",
@@ -27,6 +33,11 @@ def test_rejects_reserved_column_name() -> None:
 def test_rejects_reserved_vep_output_column_name() -> None:
     with pytest.raises(ValueError, match="reserved"):
         config_from_mapping({"vep": {"output_column": "chrom"}})
+
+
+def test_include_fields_requires_json_output_column() -> None:
+    with pytest.raises(ValueError, match="requires vep.output_column"):
+        config_from_mapping({"vep": {"include_fields": ["SYMBOL"]}})
 
 
 def test_rejects_removed_output_settings() -> None:

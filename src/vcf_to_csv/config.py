@@ -44,7 +44,7 @@ class VepConfig:
     """Settings for the VEP-compatible INFO field."""
 
     info_field: str = "CSQ"
-    output_column: str = "vep_annotations"
+    output_column: str | None = None
     include_fields: tuple[str, ...] | None = None
     required: bool = True
 
@@ -111,18 +111,24 @@ def config_from_mapping(data: Mapping[str, Any]) -> ExportConfig:
     else:
         raise ValueError("vep.include_fields must be an array of non-empty strings")
 
+    output_column_value = vep_data.get("output_column")
+    output_column = (
+        None
+        if output_column_value is None
+        else _as_nonempty_string(output_column_value, "vep.output_column")
+    )
+    if output_column is None and include_fields is not None:
+        raise ValueError("vep.include_fields requires vep.output_column")
+
     vep = VepConfig(
         info_field=_as_nonempty_string(
             vep_data.get("info_field", "CSQ"), "vep.info_field"
         ),
-        output_column=_as_nonempty_string(
-            vep_data.get("output_column", "vep_annotations"),
-            "vep.output_column",
-        ),
+        output_column=output_column,
         include_fields=include_fields,
         required=_as_bool(vep_data.get("required", True), "vep.required"),
     )
-    if vep.output_column in CORE_COLUMNS:
+    if vep.output_column is not None and vep.output_column in CORE_COLUMNS:
         raise ValueError(
             f"Duplicate or reserved output column name: {vep.output_column}"
         )
@@ -133,7 +139,8 @@ def config_from_mapping(data: Mapping[str, Any]) -> ExportConfig:
 
     columns = []
     seen_names = set(CORE_COLUMNS)
-    seen_names.add(vep.output_column)
+    if vep.output_column is not None:
+        seen_names.add(vep.output_column)
     for index, raw_column in enumerate(raw_columns, start=1):
         context = f"[[columns]] entry {index}"
         if not isinstance(raw_column, Mapping):

@@ -1,5 +1,4 @@
 import csv
-import json
 from dataclasses import replace
 from pathlib import Path
 
@@ -76,7 +75,12 @@ def test_export_biallelic_with_interest_counts(tmp_path: Path) -> None:
     assert first["clinvar_significance"] == "Pathogenic"
     assert first["allele_label"] == "alternate"
     assert first["tags"] == "a;b"
-    assert json.loads(first["vep_annotations"])[0]["SYMBOL"] == "ATM"
+    assert first["genes"] == "ATM"
+    assert first["consequences"] == "missense_variant"
+    assert first["transcripts"] == "ENST1"
+    assert first["hgvsc"] == "ENST1:c.1A>G"
+    assert first["hgvsp"] == "ENSP1:p.Lys1Arg"
+    assert "vep_annotations" not in first
 
     alt_t = rows[1]
     assert alt_t["alt"] == "T"
@@ -120,9 +124,7 @@ def test_export_public_1000_genomes_multisample_subset(tmp_path: Path) -> None:
     assert rows[0]["consequence"] == (
         "intron_variant&non_coding_transcript_variant;downstream_gene_variant"
     )
-    annotations = json.loads(rows[0]["vep_annotations"])
-    assert annotations[0]["SYMBOL"] == "ANKEF1"
-    assert annotations[0]["Gene"] == "ENSG00000132623"
+    assert "vep_annotations" not in rows[0]
 
     assert rows[1]["rsid"] == "rs6057087"
     assert rows[1]["global_af"] == "0.810503"
@@ -206,6 +208,26 @@ def test_rejects_duplicate_columns_from_direct_config(tmp_path: Path) -> None:
             tmp_path / "variants.csv",
             config,
         )
+
+
+def test_json_vep_annotations_are_opt_in(tmp_path: Path) -> None:
+    output = tmp_path / "variants.csv"
+    config = config_from_mapping(
+        {
+            "vep": {
+                "output_column": "vep_annotations",
+                "include_fields": ["SYMBOL", "Consequence"],
+            }
+        }
+    )
+
+    export_vcf(ROOT / "tests" / "data" / "biallelic.vcf", output, config)
+
+    with output.open(newline="", encoding="utf-8") as handle:
+        row = next(csv.DictReader(handle))
+    assert row["vep_annotations"] == (
+        '[{"SYMBOL":"ATM","Consequence":"missense_variant"}]'
+    )
 
 
 def test_rejects_same_input_and_output_path(tmp_path: Path) -> None:

@@ -286,7 +286,7 @@ def export_vcf(
         info_headers = _validate_custom_columns(vcf, config, vep_parser)
         fieldnames = (
             *CORE_COLUMNS,
-            config.vep.output_column,
+            *((config.vep.output_column,) if config.vep.output_column else ()),
             *(column.name for column in config.columns),
         )
         duplicate_fieldnames = sorted(
@@ -336,9 +336,6 @@ def export_vcf(
                 called, het_samples, homalt_samples = _called_and_carrier_samples(
                     sample_names, genotypes
                 )
-                projected_records = (
-                    vep_parser.project(vep_records) if vep_parser else []
-                )
                 interest_het_count = len(interest_samples.intersection(het_samples))
                 interest_homalt_count = len(
                     interest_samples.intersection(homalt_samples)
@@ -367,12 +364,16 @@ def export_vcf(
                     "other_homalt_count": len(homalt_samples) - interest_homalt_count,
                     "het_samples": SAMPLE_SEPARATOR.join(het_samples),
                     "homalt_samples": SAMPLE_SEPARATOR.join(homalt_samples),
-                    config.vep.output_column: json.dumps(
+                }
+                if config.vep.output_column is not None:
+                    projected_records = (
+                        vep_parser.project(vep_records) if vep_parser else []
+                    )
+                    row[config.vep.output_column] = json.dumps(
                         projected_records,
                         ensure_ascii=False,
                         separators=(",", ":"),
-                    ),
-                }
+                    )
                 for column in config.columns:
                     value = _custom_column_value(
                         variant,

@@ -1,16 +1,6 @@
 [vep]
 info_field = "CSQ"
 required = true
-include_fields = [
-  "Allele",
-  "Consequence",
-  "IMPACT",
-  "SYMBOL",
-  "Gene",
-  "Feature",
-  "BIOTYPE",
-  "HGVSc",
-]
 
 [[columns]]
 name = "global_af"
