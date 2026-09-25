@@ -6,6 +6,8 @@ import re
 from collections.abc import Iterable, Mapping, Sequence
 from dataclasses import dataclass
 
+from geneimpacts import VEP, Effect
+
 DEFAULT_VEP_FIELDS = (
     "Allele",
     "Consequence",
@@ -104,3 +106,21 @@ class VepParser:
             {field: record.get(field, "") for field in self.output_fields}
             for record in records
         ]
+
+    def impact(self, records: Sequence[Mapping[str, str]]) -> str | None:
+        """Return the highest normalized geneimpacts severity."""
+
+        effects = [
+            VEP(
+                "|".join(record.get(field, "") for field in self.fields),
+                self.fields,
+                checks=False,
+            )
+            for record in records
+        ]
+        top = Effect.top_severity(effects)
+        if top is None:
+            return None
+        if isinstance(top, list):
+            top = top[0]
+        return top.impact_severity

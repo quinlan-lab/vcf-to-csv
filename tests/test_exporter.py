@@ -65,6 +65,7 @@ def test_export_biallelic_with_interest_counts(tmp_path: Path) -> None:
     assert first["rsid"] == "rsOne"
     assert first["call_rate"] == "0.75"
     assert first["filter"] == "PASS"
+    assert first["impact"] == "MED"
     assert first["het_samples"] == "S1"
     assert first["homalt_samples"] == "S2"
     assert first["interest_het_count"] == "1"
@@ -85,6 +86,7 @@ def test_export_biallelic_with_interest_counts(tmp_path: Path) -> None:
     alt_t = rows[1]
     assert alt_t["alt"] == "T"
     assert alt_t["filter"] == ""
+    assert alt_t["impact"] == "LOW"
     assert alt_t["het_samples"] == "S1,S3"
     assert alt_t["homalt_samples"] == "S2"
     assert alt_t["test_af"] == "0.01"
@@ -251,6 +253,7 @@ def test_exports_site_only_vcf(tmp_path: Path) -> None:
     assert row["n_samples"] == "0"
     assert row["interest_het_count"] == "0"
     assert row["other_het_count"] == "0"
+    assert "impact" not in row
 
 
 def test_extracts_formatted_info_subfields(tmp_path: Path) -> None:

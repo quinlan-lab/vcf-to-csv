@@ -26,3 +26,16 @@ def test_parses_and_projects_records() -> None:
             "ALLELE_NUM": "1",
         }
     ]
+
+
+def test_reports_highest_normalized_impact() -> None:
+    parser = VepParser.from_header(
+        "Format: Allele|Consequence|BIOTYPE|HGVSp", None
+    )
+    records = parser.parse(
+        "G|missense_variant|protein_coding|p.Gly1=,"
+        "G|stop_gained|protein_coding|p.Gly1Ter"
+    )
+
+    assert parser.impact(records) == "HIGH"
+    assert parser.impact([]) is None

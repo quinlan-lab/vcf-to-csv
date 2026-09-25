@@ -35,6 +35,8 @@ CORE_COLUMNS = (
     "het_samples",
     "homalt_samples",
 )
+IMPACT_COLUMN = "impact"
+RESERVED_COLUMNS = frozenset((*CORE_COLUMNS, IMPACT_COLUMN))
 VALID_SOURCES = frozenset({"info", "vep"})
 VALID_AGGREGATES = frozenset({"first", "join", "max", "min"})
 
@@ -130,7 +132,7 @@ def config_from_mapping(data: Mapping[str, Any]) -> ExportConfig:
         include_fields=include_fields,
         required=_as_bool(vep_data.get("required", True), "vep.required"),
     )
-    if vep.output_column is not None and vep.output_column in CORE_COLUMNS:
+    if vep.output_column is not None and vep.output_column in RESERVED_COLUMNS:
         raise ValueError(
             f"Duplicate or reserved output column name: {vep.output_column}"
         )
@@ -140,7 +142,7 @@ def config_from_mapping(data: Mapping[str, Any]) -> ExportConfig:
         raise ValueError("[[columns]] entries must be TOML tables")
 
     columns = []
-    seen_names = set(CORE_COLUMNS)
+    seen_names = set(RESERVED_COLUMNS)
     if vep.output_column is not None:
         seen_names.add(vep.output_column)
     for index, raw_column in enumerate(raw_columns, start=1):

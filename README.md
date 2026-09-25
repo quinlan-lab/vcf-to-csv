@@ -9,6 +9,7 @@ be split before export.
 Each row includes:
 
 - `chrom`, `pos`, `ref`, `alt`, `alt_index`, `rsid`, `qual`, and `filter`
+- normalized `impact` (`HIGH`, `MED`, or `LOW`) when a VEP `CSQ` field is present
 - strict call-rate counts (`call_rate`, `n_called`, `n_missing`)
 - allele-specific `het_samples` and `homalt_samples` lists and counts
 - HET and HOMALT counts within samples of interest and all remaining samples
@@ -71,10 +72,10 @@ Genomes Phase 3 callset. Run it directly and write the CSV to standard output:
 
 Selected columns from the two output rows are:
 
-| chrom | pos | rsid | global_af | genes | consequence | het_samples | homalt_samples |
-| --- | ---: | --- | ---: | --- | --- | --- | --- |
-| 20 | 10000117 | rs4816203 | 0.605431 | ANKEF1;SNAP25-AS1 | intron_variant&non_coding_transcript_variant;downstream_gene_variant | HG00096,HG00097,NA12878 | |
-| 20 | 10000598 | rs6057087 | 0.810503 | ANKEF1;SNAP25-AS1 | intron_variant&non_coding_transcript_variant;downstream_gene_variant | HG00096,HG00097,HG00099 | NA12878 |
+| chrom | pos | rsid | impact | global_af | genes | consequence | het_samples | homalt_samples |
+| --- | ---: | --- | --- | ---: | --- | --- | --- | --- |
+| 20 | 10000117 | rs4816203 | LOW | 0.605431 | ANKEF1;SNAP25-AS1 | intron_variant&non_coding_transcript_variant;downstream_gene_variant | HG00096,HG00097,NA12878 | |
+| 20 | 10000598 | rs6057087 | LOW | 0.810503 | ANKEF1;SNAP25-AS1 | intron_variant&non_coding_transcript_variant;downstream_gene_variant | HG00096,HG00097,HG00099 | NA12878 |
 
 ### Samples of interest
 
@@ -102,6 +103,11 @@ file. Values are matched exactly and case-sensitively against both the VEP
 be used. An empty gene file emits only the CSV header.
 
 ## Configure annotations
+
+When the configured VEP INFO field is present, `geneimpacts` selects the most
+severe transcript annotation and emits its normalized three-level severity as
+`impact`. VEP `MODERATE` consequences become `MED`, and `MODIFIER` consequences
+become `LOW`. The column is omitted when the VEP field is optional and absent.
 
 Copy `config.example.toml` and update it to match the VCF header. A custom
 column can come from either:

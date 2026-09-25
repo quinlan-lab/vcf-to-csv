@@ -30,6 +30,13 @@ def test_rejects_reserved_column_name() -> None:
         )
 
 
+def test_rejects_reserved_impact_column_name() -> None:
+    with pytest.raises(ValueError, match="reserved"):
+        config_from_mapping(
+            {"columns": [{"name": "impact", "source": "vep", "field": "IMPACT"}]}
+        )
+
+
 def test_rejects_reserved_vep_output_column_name() -> None:
     with pytest.raises(ValueError, match="reserved"):
         config_from_mapping({"vep": {"output_column": "chrom"}})

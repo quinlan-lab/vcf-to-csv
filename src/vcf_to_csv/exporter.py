@@ -12,7 +12,7 @@ from typing import TextIO
 
 from cyvcf2 import VCF
 
-from .config import CORE_COLUMNS, ColumnConfig, ExportConfig
+from .config import CORE_COLUMNS, IMPACT_COLUMN, ColumnConfig, ExportConfig
 from .vep import VepParser, parse_info_format
 
 SAMPLE_SEPARATOR = ","
@@ -332,6 +332,7 @@ def export_vcf(
         info_headers = _validate_custom_columns(vcf, config, vep_parser)
         fieldnames = (
             *CORE_COLUMNS,
+            *((IMPACT_COLUMN,) if vep_parser is not None else ()),
             *((config.vep.output_column,) if config.vep.output_column else ()),
             *(column.name for column in config.columns),
         )
@@ -411,6 +412,10 @@ def export_vcf(
                     "het_samples": SAMPLE_SEPARATOR.join(het_samples),
                     "homalt_samples": SAMPLE_SEPARATOR.join(homalt_samples),
                 }
+                if vep_parser is not None:
+                    row[IMPACT_COLUMN] = _display_value(
+                        vep_parser.impact(vep_records)
+                    )
                 if config.vep.output_column is not None:
                     projected_records = (
                         vep_parser.project(vep_records) if vep_parser else []
