@@ -112,11 +112,12 @@ column can come from either:
 Supported aggregation modes are:
 
 - `first`: first populated value
-- `join`: distinct values in input order
+- `join`: values in input order (distinct values for top-level INFO fields)
 - `max` or `min`: numeric aggregation, useful for population frequencies
 
 For CSV-friendly VEP output, define one column per useful subfield. Repeated
-values are removed while input order is preserved:
+and empty values are preserved in annotation order, so columns such as symbol,
+consequence, and transcript remain positionally aligned:
 
 ```toml
 [[columns]]

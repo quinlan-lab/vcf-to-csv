@@ -120,9 +120,10 @@ def test_export_public_1000_genomes_multisample_subset(tmp_path: Path) -> None:
     assert rows[0]["homalt_samples"] == ""
     assert rows[0]["interest_het_count"] == "2"
     assert rows[0]["other_het_count"] == "1"
-    assert rows[0]["genes"] == "ANKEF1;SNAP25-AS1"
+    assert rows[0]["genes"] == "ANKEF1;SNAP25-AS1;SNAP25-AS1"
     assert rows[0]["consequence"] == (
-        "intron_variant&non_coding_transcript_variant;downstream_gene_variant"
+        "intron_variant&non_coding_transcript_variant;"
+        "downstream_gene_variant;downstream_gene_variant"
     )
     assert "vep_annotations" not in rows[0]
 
@@ -134,6 +135,60 @@ def test_export_public_1000_genomes_multisample_subset(tmp_path: Path) -> None:
     assert rows[1]["interest_homalt_count"] == "1"
     assert rows[1]["other_het_count"] == "2"
     assert rows[1]["other_homalt_count"] == "0"
+
+
+def test_vep_join_preserves_annotation_order_and_empty_values(tmp_path: Path) -> None:
+    input_vcf = tmp_path / "repeated-symbols.vcf"
+    input_vcf.write_text(
+        "##fileformat=VCFv4.2\n"
+        "##contig=<ID=1>\n"
+        '##INFO=<ID=CSQ,Number=.,Type=String,Description="Format: '
+        'Allele|Consequence|SYMBOL|Feature">\n'
+        "#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\n"
+        "1\t1\t.\tA\tG\t.\tPASS\tCSQ="
+        "G|missense_variant|GENE1|TX1,"
+        "G|missense_variant|GENE1|TX2,"
+        "G|downstream_gene_variant||TX3\n",
+        encoding="utf-8",
+    )
+    output = tmp_path / "variants.csv"
+    config = config_from_mapping(
+        {
+            "columns": [
+                {
+                    "name": "symbols",
+                    "source": "vep",
+                    "field": "SYMBOL",
+                    "aggregate": "join",
+                    "separator": ";",
+                },
+                {
+                    "name": "consequences",
+                    "source": "vep",
+                    "field": "Consequence",
+                    "aggregate": "join",
+                    "separator": ";",
+                },
+                {
+                    "name": "transcripts",
+                    "source": "vep",
+                    "field": "Feature",
+                    "aggregate": "join",
+                    "separator": ";",
+                },
+            ]
+        }
+    )
+
+    export_vcf(input_vcf, output, config)
+
+    with output.open(newline="", encoding="utf-8") as handle:
+        row = next(csv.DictReader(handle))
+    assert row["symbols"] == "GENE1;GENE1;"
+    assert row["consequences"] == (
+        "missense_variant;missense_variant;downstream_gene_variant"
+    )
+    assert row["transcripts"] == "TX1;TX2;TX3"
 
 
 def test_rejects_multiallelic_variant(tmp_path: Path) -> None:

@@ -215,6 +215,25 @@ def _aggregate(values: Iterable[object], column: ColumnConfig) -> object | None:
     raise ValueError(f"Unsupported aggregation mode: {column.aggregate!r}")
 
 
+def _aggregate_vep(
+    records: Sequence[Mapping[str, str]], column: ColumnConfig
+) -> object | None:
+    """Aggregate a VEP field without losing transcript alignment."""
+
+    if column.aggregate != "join":
+        return _aggregate((record.get(column.field) for record in records), column)
+    if not records:
+        return None
+
+    # Keep one value per annotation, including duplicates and empty values, so
+    # independently extracted VEP columns remain positionally aligned.
+    values = []
+    for record in records:
+        value = _clean_scalar(record.get(column.field))
+        values.append(MISSING_VALUE if value is None else str(value))
+    return column.separator.join(values)
+
+
 def _custom_column_value(
     variant: object,
     records: Sequence[Mapping[str, str]],
@@ -222,7 +241,7 @@ def _custom_column_value(
     info_headers: Mapping[str, HeaderField],
 ) -> object | None:
     if column.source == "vep":
-        return _aggregate((record.get(column.field) for record in records), column)
+        return _aggregate_vep(records, column)
 
     header = info_headers.get(column.name)
     if header is None:
